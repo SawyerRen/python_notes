@@ -4,15 +4,32 @@ date: 2023-05-21 19:11:13
 tags: Python
 ---
 
-## 1. 协程
+Asyncio让我们可以通过协程进行异步编程。
 
 协程（Coroutine）不是操作系统提供的，是人为创造的。是一种用户态内的上下文切换技术，通过一个线程实现代码块相互切换执行。
 
 <!--more-->
 
+# 什么是异步编程
+
+异步编程是指非阻塞的编程。‘
+
+### 异步任务
+
+异步意味着函数被请求了，但是不立即执行，而是之后被执行，我们可以之后检查异步任务的状态和结果。这个函数会在某个时刻在底层进行，程序可以进行别的任务。
+
+### 异步编程
+
+异步编程指的是执行异步任务和调用异步方法，主要用于非阻塞IO。IO操作会在系统级别进行，调用者不用等待IO操作结束就可以返回，可以在之后查看异步任务的状态和结果
+
+### python中的异步编程
+
+我们可以有多种方法来实现异步编程，通过`Asyncio`，线程池来实现。
+
+# 什么是Asyncio
+
 实现协程的方法：
 
-* yield关键字
 * asyncio装饰器
 * async，await 关键字【推荐】
 
@@ -79,7 +96,31 @@ if __name__ == '__main__':
     loop.run_until_complete(asyncio.wait(tasks))
 ```
 
-## 2. 协程意义
+# 什么时候使用Asyncio
+
+### 使用Asyncio的原因
+
+总的来说，使用Asyncio有以下三个原因。
+
+#### 1. 为了使用协程
+
+如果我们希望通过协程来实现并发，和线程、进程并发类似。
+
+线程并发主要用于阻塞IO。
+
+进程并发主要用于不需要彼此交互的CPU-bound任务，比如计算任务
+
+协程通常适用于非阻塞IO，不过也可以支持阻塞IO和CPU-bound任务（不推荐），任何通过线程和进程开发的程序都可以用协程来改写。
+
+线程和进程通过操作系统来选择哪个线程/进程应该运行，操作系统会在不同线程/进程之间进行切换。被称为抢占式多任务处理。
+
+协程则被称为合作式多任务处理，可以被暂停和恢复，我们可以设计协程什么时候以及以什么方式暂停，这相对于线程和进程，给了我们更多控制的空间。同时，协程比线程需要更少的资源，相较于线程，我们可以有更多的协程同时运行，可扩展性更强。
+
+#### 2. 为了异步编程
+
+Asyncio可以以异步的形式来进行阻塞IO和CPU-bound任务。
+
+#### 3. 为了非异步IO
 
 在一个线程中如果遇到IO等待时间，线程不会等待，会利用空闲的时间去做其他操作。
 
@@ -131,6 +172,142 @@ if __name__ == '__main__':
       asyncio.run(main())
   ```
 
+### 什么情况不适合Asyncio
+
+首先，在我们不需要异步编程的时候，比如我们在面向过程编程，或者当前程序不需要大量的IO操作，是不需要使用Asyncio的。同时，Asyncio不适合CPU密集型任务。
+
+并且，一个线程中同时只有一个协程可以运行，几乎所有的协程写的代码都可以用线程来实现，在某些情况下，线程会比协程效率更高，并且更加容易理解。
+
+# Python中的协程
+
+协程可以认为是一个生成的子线程，协程可以被执行、暂停和恢复，多个协程可以被同时创建和运行，我们可以控制这些协程什么时候暂停和恢复，这被称为合作式多任务处理。
+
+### 协程和线程的区别
+
+一个线程可以包括多个线程。
+
+协程比线程更加轻量级。协程通过方法定义，协程是一个操作系统创建并管理的对象。
+
+协程需要更少的内存，所以通常比线程更加快的创建并执行。
+
+# 协程的定义、创建和运行
+
+### 定义协程
+
+可以通过`async def`表达式来定义协程。
+
+```python
+async def func():
+    pass
+```
+
+### 创建协程
+
+协程定义之后，可以创建一个协程对象，如
+
+```python
+async def func():
+    pass
+
+res = func()
+```
+
+创建协程并不会执行协程。
+
+### 运行协程
+
+协程被定义和创建之后，需要在事件循环中运行。事件循环可以用来执行协程任务，管理不同协程之间的多任务处理。一个常用的开始事件循环的方法是`asyncio.run()`方法。这个方法接收协程并返回协程的返回值。
+
+```python
+import asyncio
+# define a coroutine
+async def custom_coro():
+    # await another coroutine
+    await asyncio.sleep(1)
+ 
+# main coroutine
+async def main():
+    # execute my custom coroutine
+    await custom_coro()
+ 
+# start the coroutine program
+asyncio.run(main())
+```
+
+# 事件循环
+
+
+
+实现协程的方法：
+
+* asyncio装饰器
+* async，await 关键字【推荐】
+
+### 1.1 asyncio
+
+在python3.4及以后的版本。
+
+```python
+import asyncio
+
+
+@asyncio.coroutine
+def func1():
+    print(1)
+    yield from asyncio.sleep(2)  # 遇到IO操作耗时，自动切换到tasks中的其他任务
+    print(2)
+
+
+@asyncio.coroutine
+def func2():
+    print(3)
+    yield from asyncio.sleep(2)  # 遇到IO操作耗时，自动切换到tasks中的其他任务
+    print(4)
+
+
+tasks = [
+    asyncio.ensure_future(func1()),
+    asyncio.ensure_future(func2())
+]
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.wait(tasks))
+
+```
+
+### 1.2 async & await关键字
+
+在python3.5及以后的版本。
+
+```python
+import asyncio
+
+
+async def func1():
+    print(1)
+    await asyncio.sleep(2)  # 遇到IO操作耗时，自动切换到tasks中的其他任务
+    print(2)
+
+
+async def func2():
+    print(3)
+    await asyncio.sleep(2)  # 遇到IO操作耗时，自动切换到tasks中的其他任务
+    print(4)
+
+
+tasks = [
+    asyncio.ensure_future(func1()),
+    asyncio.ensure_future(func2())
+]
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.wait(tasks))
+```
+
+### 
+
 ## 3. 异步编程
 
 ### 3.1 事件循环
@@ -163,31 +340,9 @@ if __name__ == '__main__':
     loop.run_until_complete(asyncio.wait(tasks))
 ```
 
-### 3.2 基本概念
 
-协程函数：在函数前加上`async`。
 
-协程对象：执行协程函数得到的对象
 
-```python
-async def func():
-    pass
-
-res = func()
-```
-
-创建协程对象后，函数内部代码不会执行。
-
-```python
-async def func():
-    pass
-
-res = func()
-
-# loop = asyncio.get_event_loop()
-# loop.run_until_complete( res )
-asyncio.run(res) # python3.7之后出现
-```
 
 ### 3.3 await
 
